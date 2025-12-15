@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>IIAM College Result Portal</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+body{font-family:Arial;background:#f4f6f8;padding:20px}
+.container{max-width:900px;margin:auto;background:#fff;padding:20px;border-radius:8px}
+h2{text-align:center}
+input,select,button{padding:8px;margin:5px;width:100%}
+table{border-collapse:collapse;width:100%;margin-top:15px}
+th,td{border:1px solid #ccc;padding:8px;text-align:center}
+th{background:#eee}
+.hidden{display:none}
+.admin{background:#eef}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<h2>IIAM College Kalyan – Result Portal</h2>
+
+<!-- ADMIN LOGIN -->
+<div id="adminLogin" class="admin">
+<h3>Admin Login</h3>
+<input type="password" id="adminPass" placeholder="Enter Admin Password">
+<button onclick="login()">Login</button>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="adminPanel" class="hidden admin">
+<h3>Upload Result Excel File</h3>
+<input type="file" id="excelFile">
+<button onclick="loadExcel()">Upload</button>
+<hr>
+</div>
+
+<!-- STUDENT PANEL -->
+<h3>Student Result</h3>
+<select id="classSelect"></select>
+<input type="text" id="rollInput" placeholder="Enter Roll / Enrollment Number">
+<button onclick="showResult()">View Result</button>
+
+<div id="output"></div>
+
+</div>
+
+<script>
+let workbookData = {};
+
+function login(){
+  if(document.getElementById("adminPass").value==="IIAMpatanahi"){
+    document.getElementById("adminPanel").classList.remove("hidden");
+    document.getElementById("adminLogin").classList.add("hidden");
+  }else{
+    alert("Wrong Password");
+  }
+}
+
+function loadExcel(){
+  let file=document.getElementById("excelFile").files[0];
+  if(!file){alert("Select Excel File");return;}
+
+  let reader=new FileReader();
+  reader.onload=function(e){
+    let data=new Uint8Array(e.target.result);
+    let wb=XLSX.read(data,{type:"array"});
+    workbookData={};
+
+    let classSelect=document.getElementById("classSelect");
+    classSelect.innerHTML="";
+
+    wb.SheetNames.forEach(sheet=>{
+      let json=XLSX.utils.sheet_to_json(wb.Sheets[sheet],{defval:""});
+      workbookData[sheet]=json;
+
+      let opt=document.createElement("option");
+      opt.value=sheet;
+      opt.textContent=sheet;
+      classSelect.appendChild(opt);
+    });
+
+    alert("Excel Loaded Successfully");
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function showResult(){
+  let cls=document.getElementById("classSelect").value;
+  let roll=document.getElementById("rollInput").value.trim();
+  let out=document.getElementById("output");
+  out.innerHTML="";
+
+  if(!workbookData[cls]){alert("Data not loaded");return;}
+
+  let student=workbookData[cls].find(r=>String(r["Roll No."])===roll);
+
+  if(!student){
+    out.innerHTML="<b>Result Not Found</b>";
+    return;
+  }
+
+  if(student["Fees Paid"]!=="Y"){
+    out.innerHTML="<b>Result Blocked – Fees Not Paid</b>";
+    return;
+  }
+
+  let table="<table><tr>";
+  Object.keys(student).forEach(h=>{
+    if(h!=="Fees Paid"){
+      table+="<th>"+h+"</th>";
+    }
+  });
+  table+="</tr><tr>";
+  Object.keys(student).forEach(h=>{
+    if(h!=="Fees Paid"){
+      table+="<td>"+student[h]+"</td>";
+    }
+  });
+  table+="</tr></table>";
+
+  out.innerHTML=table;
+}
+</script>
+
+</body>
+</html>
